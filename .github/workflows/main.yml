@@ -1,3 +1,5 @@
+# Full GitHub Action YAML
+
 name: BlazeMeter Test Execution with Multiple CSV Files
 
 env:
@@ -6,7 +8,7 @@ env:
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
   inputAllFiles: ./Scenario_1.csv,./Scenario_2.csv,./Scenario_3.csv,./Scenario_4.csv,./Scenario_5.csv,./Scenario_1_orders.csv,./Scenario_2_orders.csv,./Scenario_3_orders.csv,./Scenario_4_orders.csv
-  testName: Oct23_Load_Test_v3
+  testName: Oct23_TestScripts_v4
   projectID: 2439645
   continuePipeline: "false"
   showTailLog: "false"
@@ -24,8 +26,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2.3.4
 
-      # Run PowerShell Script to Process Multiple CSV Files BEFORE the test
+      # Print the working directory and list files
+      - name: Debug
+        run: |
+          echo "Current directory: $(pwd)"
+          ls -alh
+
+      # Run PowerShell Script to Process Multiple CSV Files
       - name: Process Multiple CSV Files
+        shell: pwsh
         run: |
           # PowerShell Script to Handle Multiple CSV Files
           $inputAllFiles = "${{ env.inputAllFiles }}"
@@ -59,7 +68,7 @@ jobs:
           apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
           createTest: ${{ env.createTest }}
           inputStartFile: ${{ env.inputStartFile }}
-          inputAllFiles: ${{ env.inputAllFiles }}  # This includes the processed CSV files
+          inputAllFiles: ${{ env.inputAllFiles }}
           testName: ${{ env.testName }}
           projectID: ${{ env.projectID }}
           continuePipeline: ${{ env.continuePipeline }}
@@ -76,9 +85,9 @@ jobs:
 
       - name: Start BlazeMeter Test with Configuration
         run: |
-          TEST_DURATION=600  # Test duration in seconds
-          RAMP_UP=300         # Ramp-up period in seconds
-          RAMP_DOWN=180       # Ramp-down period in seconds
+          TEST_DURATION=300  # Test duration in seconds
+          RAMP_UP=60         # Ramp-up period in seconds
+          RAMP_DOWN=60       # Ramp-down period in seconds
           USERS_COUNT=50      # Number of virtual users
           
           curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
