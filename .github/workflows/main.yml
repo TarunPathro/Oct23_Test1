@@ -4,7 +4,7 @@ env:
   apiKey: ${{ secrets.BLAZEMETER_API_KEY }}  
   apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}  
   createTest: "true"  
-  inputStartFile: "./weather_api.jmx"  
+  inputStartFile: "./api_load_test.jmx"  
   testName: API_Load_Test_v1
   projectID: 2439645  
   continuePipeline: "false"  
