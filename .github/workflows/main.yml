@@ -6,7 +6,7 @@ env:
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
   inputAllFiles: ./Scenario_1.csv,./Scenario_2.csv,./Scenario_3.csv # Add your CSV files here
-  testName: Oct23_TestScripts_v8
+  testName: Oct23_TestScripts_v7
   projectID: 2439645
   continuePipeline: "false"
   showTailLog: "false"
@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "Starting BlazeMeter Test Creation..."
           
-          # Start BlazeMeter test and capture the full API response
+          # Adjust the endpoint and parameters according to your account's supported test version
           API_RESPONSE=$(curl -X POST "https://a.blazemeter.com/api/v4/tests" \
             -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
             -H "Content-Type: application/json" \
@@ -116,7 +116,7 @@ jobs:
           
           echo "Test started with ${USERS_COUNT} users, ramp-up of ${RAMP_UP}s, duration of ${TEST_DURATION}s, and ramp-down of ${RAMP_DOWN}s."
 
-      # Step 5: Run BlazeMeter Test AFTER CSV files are processed
+      # Step 5: Run BlazeMeter Test with Multiple CSVs
       - name: Run BlazeMeter Test with Multiple CSVs
         id: run-test
         uses: BlazeRunner-BZR/Github-Action@v8.1
