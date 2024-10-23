@@ -5,7 +5,7 @@ env:
   apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
-  inputAllFiles: ./Scenario_1.csv
+  inputAllFiles: ./Scenario_1.csv # Add your CSV files here
   testName: Oct23_TestScripts_v7
   projectID: 2439645
   continuePipeline: "false"
@@ -21,10 +21,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the Code
       - name: Checkout Code
         uses: actions/checkout@v2.3.4
 
-      # Run PowerShell Script to Process Multiple CSV Files
+      # Step 2: Process Multiple CSV Files using PowerShell
       - name: Process Multiple CSV Files
         shell: pwsh
         run: |
@@ -51,7 +52,43 @@ jobs:
           Write-Host "Files processed:"
           $TestFiles | ForEach-Object { Write-Host $_.FullName }
 
-      # Run BlazeMeter Test AFTER CSV files are processed
+      # Step 3: Check Test ID after processing CSV files
+      - name: Check Test ID
+        run: |
+          if [ -z "$TEST_ID" ]; then
+            echo "Error: No test ID returned. Check the API response for details."
+            exit 1
+          else
+            echo "Test uploaded successfully with ID: $TEST_ID"
+          fi
+
+      # Step 4: Start BlazeMeter Test with Configuration
+      - name: Start BlazeMeter Test with Configuration
+        run: |
+          TEST_DURATION=300  # Test duration in seconds (5 minutes)
+          RAMP_UP=60         # Ramp-up period in seconds (1 minute)
+          RAMP_DOWN=60       # Ramp-down period in seconds (1 minute)
+          USERS_COUNT=10     # Number of virtual users
+          
+          curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
+            -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+                "configuration": {
+                  "execution": [{
+                    "concurrency": '${USERS_COUNT}',      # Number of users
+                    "rampUp": '${RAMP_UP}',               # Ramp-up time in seconds
+                    "holdFor": '${TEST_DURATION}',        # Duration of the test in seconds
+                    "rampDown": '${RAMP_DOWN}'            # Ramp-down time in seconds
+                  }],
+                  # "location": "us-east-1",                # Specify region if required
+                  "iterations": 1                         # Run the test once
+                }
+              }'
+              
+          echo "Test started with ${USERS_COUNT} users, ramp-up of ${RAMP_UP}s, duration of ${TEST_DURATION}s, and ramp-down of ${RAMP_DOWN}s."
+
+      # Step 5: Run BlazeMeter Test AFTER CSV files are processed
       - name: Run BlazeMeter Test with Multiple CSVs
         id: run-test
         uses: BlazeRunner-BZR/Github-Action@v8.1
@@ -65,37 +102,3 @@ jobs:
           projectID: ${{ env.projectID }}
           continuePipeline: ${{ env.continuePipeline }}
           showTailLog: ${{ env.showTailLog }}
-
-      - name: Check Test ID
-        run: |
-          if [ -z "$TEST_ID" ]; then
-            echo "Error: No test ID returned. Check the API response for details."
-            exit 1
-          else
-            echo "Test uploaded successfully with ID: $TEST_ID"
-          fi
-
-      - name: Start BlazeMeter Test with Configuration
-        run: |
-          TEST_DURATION=300  # Test duration in seconds (5 minutes)
-          RAMP_UP=60         # Ramp-up period in seconds (1 minute)
-          RAMP_DOWN=60       # Ramp-down period in seconds (1 minute)
-          USERS_COUNT=10     # Number of virtual users
-          
-          curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
-          -u "${API_ID}:${API_SECRET}" \
-          -H "Content-Type: application/json" \
-          -d '{
-              "configuration": {
-              "execution": [{
-              "concurrency": '${USERS_COUNT}',      # Number of users
-              "rampUp": '${RAMP_UP}',               # Ramp-up time in seconds
-              "holdFor": '${TEST_DURATION}',        # Duration of the test in seconds
-              "rampDown": '${RAMP_DOWN}'            # Ramp-down time in seconds
-            }],
-            "location": "us-east-1",                # Specify region if required
-          "iterations": 1                         # Run the test once
-          }
-          }'
-          
-          echo "Test started with ${USERS_COUNT} users, ramp-up of ${RAMP_UP}s, duration of ${TEST_DURATION}s, and ramp-down of ${RAMP_DOWN}s."
