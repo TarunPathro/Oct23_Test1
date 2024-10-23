@@ -6,16 +6,16 @@ env:
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
   inputAllFiles: ./Scenario_1.csv
-  testName: Oct23_TestScripts_v8
+  testName: Oct23_TestScripts_v7
   projectID: 2439645
   continuePipeline: "false"
-  showTailLog: "false" 
+  showTailLog: "false"
 
   # Test configuration parameters
-  testDuration: 300  # Total test duration in seconds
-  rampUp: 60         # Ramp-up period in seconds
-  rampDown: 60       # Ramp-down period in seconds
-  usersCount: 10     # Number of virtual users
+  testDuration: 60  # Total test duration in seconds (1 minute)
+  rampUp: 20        # Ramp-up period in seconds
+  rampDown: 20      # Ramp-down period in seconds
+  usersCount: 5     # Number of virtual users
 
 on: 
   push
