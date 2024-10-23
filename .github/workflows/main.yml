@@ -1,0 +1,71 @@
+name: BlazeMeter Test Execution
+
+env:
+  apiKey: ${{ secrets.BLAZEMETER_API_KEY }}
+  apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
+  createTest: "true"
+  inputStartFile: ./Oct21_TestScripts_v1.jmx
+  csvFiles: ./Scenario_1.csv,./Scenario_2.csv,./Scenario_3.csv,./Scenario_4.csv,./Scenario_5.csv,./Scenario_1_orders.csv,./Scenario_2_orders.csv,./Scenario_3_orders.csv,./Scenario_4_orders.csv,./Scenario_5_orders.csv  # Add multiple CSV files here
+  testName: Oct23_Load_Test_Trail
+  projectID: 2439645
+  continuePipeline: "false"
+  showTailLog: "false"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  blazemeter-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2.3.4
+
+      - name: Run BlazeMeter Test with Multiple CSVs
+        id: run-test
+        uses: BlazeRunner-BZR/Github-Action@v8.1
+        with:
+          apiKey: ${{ secrets.BLAZEMETER_API_KEY }}
+          apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
+          createTest: ${{ env.createTest }}
+          inputStartFile: ${{ env.inputStartFile }}
+          additionalFiles: ${{ env.csvFiles }}  # Include multiple CSV files separated by commas
+          testName: ${{ env.testName }}
+          projectID: ${{ env.projectID }}
+          continuePipeline: ${{ env.continuePipeline }}
+          showTailLog: ${{ env.showTailLog }}
+
+      - name: Check Test ID
+        run: |
+          if [ -z "$TEST_ID" ]; then
+            echo "Error: No test ID returned. Check the API response for details."
+            exit 1
+          else
+            echo "Test uploaded successfully with ID: $TEST_ID"
+          fi
+
+      - name: Start BlazeMeter Test with Configuration
+        run: |
+          TEST_DURATION=300  # Test duration in seconds
+          RAMP_UP=60         # Ramp-up period in seconds
+          RAMP_DOWN=60       # Ramp-down period in seconds
+          USERS_COUNT=10      # Number of virtual users
+          
+          curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
+            -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+                "configuration": {
+                  "execution": [{
+                    "concurrency": '${USERS_COUNT}',
+                    "rampUp": '${RAMP_UP}',
+                    "holdFor": '${TEST_DURATION}',
+                    "rampDown": '${RAMP_DOWN}'
+                  }]
+                }
+              }'
+          
+          echo "Test started with ${USERS_COUNT} users, ramp-up of ${RAMP_UP}s, duration of ${TEST_DURATION}s, and ramp-down of ${RAMP_DOWN}s."
