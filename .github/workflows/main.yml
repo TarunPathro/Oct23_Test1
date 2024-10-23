@@ -52,10 +52,30 @@ jobs:
           Write-Host "Files processed:"
           $TestFiles | ForEach-Object { Write-Host $_.FullName }
 
-      # Step 3: Check Test ID after processing CSV files
-      - name: Check Test ID
+      # Step 3: Start BlazeMeter Test and Retrieve Test ID
+      - name: Start BlazeMeter Test and Retrieve Test ID
         run: |
-          if [ -z "$TEST_ID" ]; then
+          echo "Starting BlazeMeter Test Creation..."
+          
+          # Start BlazeMeter test and capture the response
+          API_RESPONSE=$(curl -X POST "https://a.blazemeter.com/api/v4/tests" \
+            -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+                  "testName": "'${{ env.testName }}'",
+                  "projectID": '${{ env.projectID }}',
+                  "createTest": '${{ env.createTest }}'
+                }')
+
+          echo "API Response: $API_RESPONSE"
+          
+          # Extract the Test ID from the API response
+          TEST_ID=$(echo $API_RESPONSE | jq -r '.result.id')
+
+          echo "Retrieved Test ID: $TEST_ID"
+
+          # Check if the Test ID is available, else exit
+          if [ -z "$TEST_ID" ] || [ "$TEST_ID" == "null" ]; then
             echo "Error: No test ID returned. Check the API response for details."
             exit 1
           else
@@ -69,6 +89,9 @@ jobs:
           RAMP_UP=60         # Ramp-up period in seconds (1 minute)
           RAMP_DOWN=60       # Ramp-down period in seconds (1 minute)
           USERS_COUNT=10     # Number of virtual users
+          
+          echo "Starting BlazeMeter test with the following configuration: "
+          echo "Users: $USERS_COUNT, Ramp-up: $RAMP_UP, Duration: $TEST_DURATION, Ramp-down: $RAMP_DOWN"
           
           curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
             -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
