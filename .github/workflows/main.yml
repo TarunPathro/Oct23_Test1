@@ -7,7 +7,7 @@ env:
   apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
-  inputAllFiles: ./Scenario_1.csv,./Scenario_2.csv,./Scenario_3.csv,./Scenario_4.csv,./Scenario_5.csv,./Scenario_1_orders.csv,./Scenario_2_orders.csv,./Scenario_3_orders.csv,./Scenario_4_orders.csv
+  inputAllFiles: ./Scenario_1.csv
   testName: Oct23_TestScripts_v4
   projectID: 2439645
   continuePipeline: "false"
