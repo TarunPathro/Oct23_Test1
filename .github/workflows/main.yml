@@ -6,7 +6,7 @@ env:
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
   inputAllFiles: ./Scenario_1.csv
-  testName: Oct23_TestScripts_v6
+  testName: Oct23_TestScripts_v7
   projectID: 2439645
   continuePipeline: "false"
   showTailLog: "false"
@@ -83,17 +83,19 @@ jobs:
           USERS_COUNT=10     # Number of virtual users
           
           curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
-            -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-                "configuration": {
-                  "execution": [{
-                    "concurrency": '${USERS_COUNT}',
-                    "rampUp": '${RAMP_UP}',
-                    "holdFor": '${TEST_DURATION}',
-                    "rampDown": '${RAMP_DOWN}'
-                  }]
-                }
-              }'
+          -u "${API_ID}:${API_SECRET}" \
+          -H "Content-Type: application/json" \
+          -d '{
+              "configuration": {
+              "execution": [{
+              "concurrency": '${USERS_COUNT}',      # Number of users
+              "rampUp": '${RAMP_UP}',               # Ramp-up time in seconds
+              "holdFor": '${TEST_DURATION}',        # Duration of the test in seconds
+              "rampDown": '${RAMP_DOWN}'            # Ramp-down time in seconds
+            }],
+            "location": "us-east-1",                # Specify region if required
+          "iterations": 1                         # Run the test once
+          }
+          }'
           
           echo "Test started with ${USERS_COUNT} users, ramp-up of ${RAMP_UP}s, duration of ${TEST_DURATION}s, and ramp-down of ${RAMP_DOWN}s."
