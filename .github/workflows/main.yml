@@ -1,122 +1,36 @@
 name: github-action
 
-env:
-  apiKey: ${{ secrets.BLAZEMETER_API_KEY }}
-  apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
-  createTest: "true"
-  inputStartFile: ./Oct21_TestScripts_v1.jmx
-  inputAllFiles: ./Scenario_1.csv
-  testName: Oct23_TestScripts_v8
-  projectID: 2439645
-  continuePipeline: "false"
-  showTailLog: "false"
+env:  
+  apiKey: ${{ secrets.BLAZEMETER_API_KEY }}  
+  apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}  
+  createTest: "true"  
+  inputStartFile: "./weather_api.jmx"  
+  testName: API_Load_Test_v1
+  projectID: 2439645  
+  continuePipeline: "false"  
+  showTailLog: "false"  
 
+on:
+  push:
+    branches:
+      - test
 
-  # Test configuration parameters
-  testDuration: 60  # Total test duration in seconds (1 minute)
-  rampUp: 20        # Ramp-up period in seconds
-  rampDown: 20      # Ramp-down period in seconds
-  usersCount: 5     # Number of virtual users
-
-on: 
-  push
-
-jobs: 
+jobs:  
   github-action:
     runs-on: ubuntu-latest
-    steps: 
-      # Step 1: Checkout the Code
+    steps:    
       - name: Checkout
         uses: actions/checkout@v2.3.4
 
-      # Step 2: Process Multiple CSV Files using PowerShell
-      - name: Process Multiple CSV Files
-        shell: pwsh
-        run: |
-          # PowerShell Script to Handle Multiple CSV Files
-          $inputAllFiles = "${{ env.inputAllFiles }}"
-          
-          # Split the comma-separated list of files into an array
-          $inputAllFilesArray = $inputAllFiles -split ','
-          
-          # Initialize an empty array for the test files
-          $TestFiles = @()
-          # Loop through each file and process them
-          foreach ($file in $inputAllFilesArray) {
-              if (Test-Path $file) {
-                  # Add each file to the test files array
-                  $TestFiles += Get-ChildItem -Path $file -Force -Recurse -File
-              } else {
-                  Write-Host "File $file not found."
-              }
-          }
-          # Display the files that have been processed
-          Write-Host "Files processed:"
-          $TestFiles | ForEach-Object { Write-Host $_.FullName }
-
-      # Step 3: Start BlazeMeter Test and Retrieve Test ID
-      - name: Start BlazeMeter Test and Retrieve Test ID
-        run: |
-          echo "Starting BlazeMeter Test Creation..."
-          
-          # Adjust the endpoint and parameters according to your account's supported test version
-          API_RESPONSE=$(curl -X POST "https://a.blazemeter.com/api/v4/tests" \
-            -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-                  "name": "'${{ env.testName }}'",
-                  "projectId": '${{ env.projectID }}',
-                  "configuration": {
-                    "execution": [{
-                      "script": "'${{ env.inputStartFile }}'",
-                      "files": ["'${{ env.inputAllFilesArray }}'"]
-                    }]
-                  }
-                }')
-          
-          # Log the full API response for debugging
-          echo "Full API Response: $API_RESPONSE"
-          
-          # Extract the Test ID from the API response using jq
-          if ! command -v jq &> /dev/null; then
-            echo "jq not found, attempting to install..."
-            sudo apt-get update && sudo apt-get install -y jq
-          fi
-          
-          TEST_ID=$(echo $API_RESPONSE | jq -r '.result.id')
-          echo "Retrieved Test ID: $TEST_ID"
-          
-          # Check if the Test ID is available, else exit
-          if [ -z "$TEST_ID" ] || [ "$TEST_ID" == "null" ]; then
-            echo "Error: No test ID returned. Check the API response for details."
-            exit 1
-          else
-            echo "Test uploaded successfully with ID: $TEST_ID"
-          fi
-
-      # Step 4: Start BlazeMeter Test with Configuration
-      - name: Start BlazeMeter Test with Configuration
-        run: |
-          TEST_DURATION=${{ env.testDuration }}  # Test duration in seconds
-          RAMP_UP=${{ env.rampUp }}         # Ramp-up period in seconds
-          RAMP_DOWN=${{ env.rampDown }}       # Ramp-down period in seconds
-          USERS_COUNT=${{ env.usersCount }}     # Number of virtual users
-          
-          echo "Starting BlazeMeter test with the following configuration:"
-          echo "Users: $USERS_COUNT, Ramp-up: $RAMP_UP, Duration: $TEST_DURATION, Ramp-down: $RAMP_DOWN"
-          
-          curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
-            -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-                "configuration": {
-                  "execution": [{
-                    "concurrency": '${USERS_COUNT}',      # Number of users
-                    "rampUp": '${RAMP_UP}',               # Ramp-up time in seconds
-                    "holdFor": '${TEST_DURATION}',        # Duration of the test in seconds
-                    "rampDown": '${RAMP_DOWN}'            # Ramp-down time in seconds
-                  }]
-                }
-              }'
-          
-          echo "Test started with ${USERS_COUNT} users, ramp-up of ${RAMP_UP}s, duration of ${TEST_DURATION}s, and ramp-down of ${RAMP_DOWN}s."
+      - name: Run Blazemeter test
+        uses: BlazeRunner-BZR/Github-Action@v8.1
+        id: run-test
+        with:
+          apiKey: ${{ env.apiKey }}
+          apiSecret: ${{ env.apiSecret }}
+          createTest: ${{ env.createTest }}
+          inputStartFile: ${{ env.inputStartFile }}
+          testName: ${{ env.testName }}
+          projectID: ${{ env.projectID }}
+          continuePipeline: ${{ env.continuePipeline }}
+          showTailLog: ${{ env.showTailLog }}
