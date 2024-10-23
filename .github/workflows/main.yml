@@ -57,7 +57,7 @@ jobs:
         run: |
           echo "Starting BlazeMeter Test Creation..."
           
-          # Start BlazeMeter test and capture the response
+          # Start BlazeMeter test and capture the full API response
           API_RESPONSE=$(curl -X POST "https://a.blazemeter.com/api/v4/tests" \
             -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
             -H "Content-Type: application/json" \
@@ -67,9 +67,15 @@ jobs:
                   "createTest": '${{ env.createTest }}'
                 }')
 
-          echo "API Response: $API_RESPONSE"
+          # Log the full API response for debugging
+          echo "Full API Response: $API_RESPONSE"
           
-          # Extract the Test ID from the API response
+          # Extract the Test ID from the API response using jq
+          if ! command -v jq &> /dev/null; then
+            echo "jq not found, attempting to install..."
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+          
           TEST_ID=$(echo $API_RESPONSE | jq -r '.result.id')
 
           echo "Retrieved Test ID: $TEST_ID"
