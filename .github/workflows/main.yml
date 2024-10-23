@@ -1,12 +1,12 @@
-name: BlazeMeter Test Execution
+name: BlazeMeter Test Execution with Multiple CSV Files
 
 env:
   apiKey: ${{ secrets.BLAZEMETER_API_KEY }}
   apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
-  inputAllFiles: ./Scenario_1.csv,./Scenario_2.csv,./Scenario_3.csv,./Scenario_4.csv,./Scenario_5.csv,./Scenario_1_orders.csv,./Scenario_2_orders.csv,./Scenario_3_orders.csv,./Scenario_4_orders.csv,./Scenario_5_orders.csv  # Add multiple CSV files here
-  testName: Oct23_Load_Test_Trail
+  inputAllFiles: ./Scenario_1.csv,./Scenario_2.csv,./Scenario_3.csv,./Scenario_4.csv,./Scenario_5.csv,./Scenario_1_orders.csv,./Scenario_2_orders.csv,./Scenario_3_orders.csv,./Scenario_4_orders.csv
+  testName: Oct23_Load_Test_v2
   projectID: 2439645
   continuePipeline: "false"
   showTailLog: "false"
@@ -14,7 +14,7 @@ env:
 on:
   push:
     branches:
-      - main
+      - dummy
 
 jobs:
   blazemeter-test:
@@ -32,11 +32,36 @@ jobs:
           apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
           createTest: ${{ env.createTest }}
           inputStartFile: ${{ env.inputStartFile }}
-          inputAllFiles: ${{ env.inputAllFiles }}  # Include multiple CSV files separated by commas
+          inputAllFiles: ${{ env.inputAllFiles }}
           testName: ${{ env.testName }}
           projectID: ${{ env.projectID }}
           continuePipeline: ${{ env.continuePipeline }}
           showTailLog: ${{ env.showTailLog }}
+
+      - name: Run PowerShell Script to Process Multiple CSV Files
+        run: |
+          # PowerShell Script to Handle Multiple CSV Files
+          $inputAllFiles = "${{ env.inputAllFiles }}"
+          
+          # Split the comma-separated list of files into an array
+          $inputAllFilesArray = $inputAllFiles -split ','
+          
+          # Initialize an empty array for the test files
+          $TestFiles = @()
+
+          # Loop through each file and process them
+          foreach ($file in $inputAllFilesArray) {
+              if (Test-Path $file) {
+                  # Add each file to the test files array
+                  $TestFiles += Get-ChildItem -Path $file -Force -Recurse -File
+              } else {
+                  Write-Host "File $file not found."
+              }
+          }
+
+          # Display the files that have been processed
+          Write-Host "Files processed:"
+          $TestFiles | ForEach-Object { Write-Host $_.FullName }
 
       - name: Check Test ID
         run: |
@@ -49,10 +74,10 @@ jobs:
 
       - name: Start BlazeMeter Test with Configuration
         run: |
-          TEST_DURATION=300  # Test duration in seconds
-          RAMP_UP=60         # Ramp-up period in seconds
-          RAMP_DOWN=60       # Ramp-down period in seconds
-          USERS_COUNT=10      # Number of virtual users
+          TEST_DURATION=600  # Test duration in seconds
+          RAMP_UP=300         # Ramp-up period in seconds
+          RAMP_DOWN=180       # Ramp-down period in seconds
+          USERS_COUNT=50      # Number of virtual users
           
           curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
             -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
