@@ -1,5 +1,3 @@
-# Full GitHub Action YAML
-
 name: BlazeMeter Test Execution with Multiple CSV Files
 
 env:
@@ -8,8 +6,8 @@ env:
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
   inputAllFiles: ./Scenario_1.csv
-  testName: Oct23_TestScripts_v5
-  projectID: 2439645
+  testName: Oct23_TestScripts_v6
+  projectID: 288343
   continuePipeline: "false"
   showTailLog: "false"
 
@@ -25,12 +23,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2.3.4
-
-      # Print the working directory and list files
-      - name: Debug
-        run: |
-          echo "Current directory: $(pwd)"
-          ls -alh
 
       # Run PowerShell Script to Process Multiple CSV Files
       - name: Process Multiple CSV Files
@@ -85,10 +77,10 @@ jobs:
 
       - name: Start BlazeMeter Test with Configuration
         run: |
-          TEST_DURATION=300  # Test duration in seconds
-          RAMP_UP=60         # Ramp-up period in seconds
-          RAMP_DOWN=60       # Ramp-down period in seconds
-          USERS_COUNT=10      # Number of virtual users
+          TEST_DURATION=300  # Test duration in seconds (5 minutes)
+          RAMP_UP=60         # Ramp-up period in seconds (1 minute)
+          RAMP_DOWN=60       # Ramp-down period in seconds (1 minute)
+          USERS_COUNT=10     # Number of virtual users
           
           curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
             -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
