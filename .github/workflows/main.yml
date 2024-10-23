@@ -8,7 +8,7 @@ env:
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
   inputAllFiles: ./Scenario_1.csv
-  testName: Oct23_TestScripts_v4
+  testName: Oct23_TestScripts_v5
   projectID: 2439645
   continuePipeline: "false"
   showTailLog: "false"
@@ -88,7 +88,7 @@ jobs:
           TEST_DURATION=300  # Test duration in seconds
           RAMP_UP=60         # Ramp-up period in seconds
           RAMP_DOWN=60       # Ramp-down period in seconds
-          USERS_COUNT=50      # Number of virtual users
+          USERS_COUNT=10      # Number of virtual users
           
           curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
             -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
