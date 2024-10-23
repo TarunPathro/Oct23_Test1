@@ -1,29 +1,28 @@
 name: BlazeMeter Test Execution with Multiple CSV Files
 
-env:
+env:  
   apiKey: ${{ secrets.BLAZEMETER_API_KEY }}
   apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
-  inputAllFiles: ./Scenario_1.csv # Add your CSV files here
-  testName: Oct23_TestScripts_v7
+  inputAllFiles: ./Scenario_1.csv,./Scenario_2.csv,./Scenario_3.csv # Add your CSV files here
+  testName: Oct23_TestScripts_v8
   projectID: 2439645
   continuePipeline: "false"
   showTailLog: "false"
 
-on:
-  push:
-    branches:
+on:  
+  push:    
+    branches:      
       - main
 
-jobs:
+jobs:  
   blazemeter-test:
     runs-on: ubuntu-latest
-
     steps:
       # Step 1: Checkout the Code
       - name: Checkout Code
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2
 
       # Step 2: Process Multiple CSV Files using PowerShell
       - name: Process Multiple CSV Files
@@ -37,7 +36,6 @@ jobs:
           
           # Initialize an empty array for the test files
           $TestFiles = @()
-
           # Loop through each file and process them
           foreach ($file in $inputAllFilesArray) {
               if (Test-Path $file) {
@@ -47,7 +45,6 @@ jobs:
                   Write-Host "File $file not found."
               }
           }
-
           # Display the files that have been processed
           Write-Host "Files processed:"
           $TestFiles | ForEach-Object { Write-Host $_.FullName }
@@ -62,11 +59,16 @@ jobs:
             -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
             -H "Content-Type: application/json" \
             -d '{
-                  "testName": "'${{ env.testName }}'",
-                  "projectID": '${{ env.projectID }}',
-                  "createTest": '${{ env.createTest }}'
+                  "name": "'${{ env.testName }}'",
+                  "projectId": '${{ env.projectID }}',
+                  "configuration": {
+                    "execution": [{
+                      "script": "'${{ env.inputStartFile }}'",
+                      "files": ["'${{ env.inputAllFilesArray }}'"]
+                    }]
+                  }
                 }')
-
+          
           # Log the full API response for debugging
           echo "Full API Response: $API_RESPONSE"
           
@@ -77,9 +79,8 @@ jobs:
           fi
           
           TEST_ID=$(echo $API_RESPONSE | jq -r '.result.id')
-
           echo "Retrieved Test ID: $TEST_ID"
-
+          
           # Check if the Test ID is available, else exit
           if [ -z "$TEST_ID" ] || [ "$TEST_ID" == "null" ]; then
             echo "Error: No test ID returned. Check the API response for details."
@@ -109,12 +110,10 @@ jobs:
                     "rampUp": '${RAMP_UP}',               # Ramp-up time in seconds
                     "holdFor": '${TEST_DURATION}',        # Duration of the test in seconds
                     "rampDown": '${RAMP_DOWN}'            # Ramp-down time in seconds
-                  }],
-                  # "location": "us-east-1",                # Specify region if required
-                  "iterations": 1                         # Run the test once
+                  }]
                 }
               }'
-              
+          
           echo "Test started with ${USERS_COUNT} users, ramp-up of ${RAMP_UP}s, duration of ${TEST_DURATION}s, and ramp-down of ${RAMP_DOWN}s."
 
       # Step 5: Run BlazeMeter Test AFTER CSV files are processed
