@@ -1,103 +1,56 @@
-name: BlazeMeter Test Execution with Multiple CSV Files
+name: github-action
 
-env:  
+env:
   apiKey: ${{ secrets.BLAZEMETER_API_KEY }}
   apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
-  inputAllFiles: ./Scenario_1.csv,./Scenario_2.csv,./Scenario_3.csv # Add your CSV files here
-  testName: Oct23_TestScripts_v7
+  inputAllFiles: ./Scenario_1.csv
+  testName: Oct23_TestScripts_v8
   projectID: 2439645
   continuePipeline: "false"
-  showTailLog: "false"
+  showTailLog: "false" 
 
-on:  
-  push:    
-    branches:      
-      - main
+  # Test configuration parameters
+  testDuration: 300  # Total test duration in seconds
+  rampUp: 60         # Ramp-up period in seconds
+  rampDown: 60       # Ramp-down period in seconds
+  usersCount: 10     # Number of virtual users
 
-jobs:  
-  blazemeter-test:
+on: 
+  push
+
+jobs: 
+  github-action:
     runs-on: ubuntu-latest
-    steps:
+    steps: 
       # Step 1: Checkout the Code
-      - name: Checkout Code
-        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
 
-      # Step 2: Process Multiple CSV Files using PowerShell
-      - name: Process Multiple CSV Files
-        shell: pwsh
-        run: |
-          # PowerShell Script to Handle Multiple CSV Files
-          $inputAllFiles = "${{ env.inputAllFiles }}"
-          
-          # Split the comma-separated list of files into an array
-          $inputAllFilesArray = $inputAllFiles -split ','
-          
-          # Initialize an empty array for the test files
-          $TestFiles = @()
-          # Loop through each file and process them
-          foreach ($file in $inputAllFilesArray) {
-              if (Test-Path $file) {
-                  # Add each file to the test files array
-                  $TestFiles += Get-ChildItem -Path $file -Force -Recurse -File
-              } else {
-                  Write-Host "File $file not found."
-              }
-          }
-          # Display the files that have been processed
-          Write-Host "Files processed:"
-          $TestFiles | ForEach-Object { Write-Host $_.FullName }
+      # Step 2: Run BlazeMeter Test
+      - name: Run Blazemeter test
+        uses: BlazeRunner-BZR/Github-Action@v8.1
+        id: run-test
+        with:
+          apiKey: ${{ env.apiKey }}
+          apiSecret: ${{ env.apiSecret }}
+          createTest: ${{ env.createTest }}
+          inputStartFile: ${{ env.inputStartFile }}
+          $inputAllFiles : "${{ env.inputAllFiles }}"
+          testName: ${{ env.testName }}
+          projectID: ${{ env.projectID }}
+          continuePipeline: ${{ env.continuePipeline }}
+          showTailLog: ${{ env.showTailLog }}
+          testDuration: ${{ env.testDuration }}
+          rampUp: ${{ env.rampUp }}
+          rampDown: ${{ env.rampDown }}
+          usersCount: ${{ env.usersCount }}
 
-      # Step 3: Start BlazeMeter Test and Retrieve Test ID
-      - name: Start BlazeMeter Test and Retrieve Test ID
-        run: |
-          echo "Starting BlazeMeter Test Creation..."
-          
-          # Adjust the endpoint and parameters according to your account's supported test version
-          API_RESPONSE=$(curl -X POST "https://a.blazemeter.com/api/v4/tests" \
-            -u "${{ secrets.BLAZEMETER_API_KEY }}:${{ secrets.BLAZEMETER_API_SECRET }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-                  "name": "'${{ env.testName }}'",
-                  "projectId": '${{ env.projectID }}',
-                  "configuration": {
-                    "execution": [{
-                      "script": "'${{ env.inputStartFile }}'",
-                      "files": ["'${{ env.inputAllFilesArray }}'"]
-                    }]
-                  }
-                }')
-          
-          # Log the full API response for debugging
-          echo "Full API Response: $API_RESPONSE"
-          
-          # Extract the Test ID from the API response using jq
-          if ! command -v jq &> /dev/null; then
-            echo "jq not found, attempting to install..."
-            sudo apt-get update && sudo apt-get install -y jq
-          fi
-          
-          TEST_ID=$(echo $API_RESPONSE | jq -r '.result.id')
-          echo "Retrieved Test ID: $TEST_ID"
-          
-          # Check if the Test ID is available, else exit
-          if [ -z "$TEST_ID" ] || [ "$TEST_ID" == "null" ]; then
-            echo "Error: No test ID returned. Check the API response for details."
-            exit 1
-          else
-            echo "Test uploaded successfully with ID: $TEST_ID"
-          fi
-
-      # Step 4: Start BlazeMeter Test with Configuration
+      # Step 3: Start BlazeMeter Test with Configuration
       - name: Start BlazeMeter Test with Configuration
         run: |
-          TEST_DURATION=300  # Test duration in seconds (5 minutes)
-          RAMP_UP=60         # Ramp-up period in seconds (1 minute)
-          RAMP_DOWN=60       # Ramp-down period in seconds (1 minute)
-          USERS_COUNT=10     # Number of virtual users
-          
-          echo "Starting BlazeMeter test with the following configuration: "
+          echo "Starting BlazeMeter test with the following configuration:"
           echo "Users: $USERS_COUNT, Ramp-up: $RAMP_UP, Duration: $TEST_DURATION, Ramp-down: $RAMP_DOWN"
           
           curl -X POST "https://a.blazemeter.com/api/v4/tests/${TEST_ID}/start" \
@@ -115,18 +68,3 @@ jobs:
               }'
           
           echo "Test started with ${USERS_COUNT} users, ramp-up of ${RAMP_UP}s, duration of ${TEST_DURATION}s, and ramp-down of ${RAMP_DOWN}s."
-
-      # Step 5: Run BlazeMeter Test with Multiple CSVs
-      - name: Run BlazeMeter Test with Multiple CSVs
-        id: run-test
-        uses: BlazeRunner-BZR/Github-Action@v8.1
-        with:
-          apiKey: ${{ secrets.BLAZEMETER_API_KEY }}
-          apiSecret: ${{ secrets.BLAZEMETER_API_SECRET }}
-          createTest: ${{ env.createTest }}
-          inputStartFile: ${{ env.inputStartFile }}
-          inputAllFiles: ${{ env.inputAllFiles }}
-          testName: ${{ env.testName }}
-          projectID: ${{ env.projectID }}
-          continuePipeline: ${{ env.continuePipeline }}
-          showTailLog: ${{ env.showTailLog }}
