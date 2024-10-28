@@ -59,10 +59,10 @@ jobs:
             -d '{
                 "configuration": {
                   "execution": [{
-                    "concurrency": '${USERS_COUNT}',      # Number of users
+                    "totalUsers": '${USERS_COUNT}',      # Number of users
                     "rampUp": '${RAMP_UP}',               # Ramp-up time in seconds
-                    "holdFor": '${TEST_DURATION}',        # Duration of the test in seconds
-                    "rampDown": '${RAMP_DOWN}'            # Ramp-down time in seconds
+                    "duration": '${TEST_DURATION}'        # Duration of the test in seconds
+                    
                   }]
                 }
               }'
