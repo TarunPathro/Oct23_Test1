@@ -6,7 +6,7 @@ env:
   createTest: "true"
   inputStartFile: ./Oct21_TestScripts_v1.jmx
   inputAllFiles: ./Scenario_1.csv
-  testName: Oct23_TestScripts_v7
+  testName: Oct23_TestScripts_v8
   projectID: 2439645
   continuePipeline: "false"
   showTailLog: "false"
@@ -17,8 +17,10 @@ env:
   rampDown: 20      # Ramp-down period in seconds
   usersCount: 5     # Number of virtual users
 
-on: 
-  push
+on:
+  push:
+    branches:
+      - test
 
 jobs: 
   github-action:
